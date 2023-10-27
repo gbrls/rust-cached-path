@@ -345,6 +345,27 @@ impl Cache {
         }
     }
 
+    pub fn delete_cached_path(&self, resource: &str, subdir: Option<&str>) -> Result<(), Error> {
+        info!("Cleaning local files for {}", resource);
+        let meta = self.fetch_remote_resource(resource, subdir, None)?;
+
+        let meta_path = meta.meta_path;
+        let lock_path = format!("{}.lock", meta.resource_path.to_str().unwrap());
+
+        fs::remove_file(meta_path)?;
+        fs::remove_file(lock_path)?;
+
+        if let Some(extraction_path) = &meta.extraction_path {
+            let extraction_dir = self.dir.join(extraction_path);
+            let extraction_dir_lock = format!("{}.lock", extraction_dir.to_str().unwrap());
+
+            fs::remove_file(extraction_dir_lock)?;
+            fs::remove_dir_all(extraction_dir)?;
+        }
+
+        Ok(())
+    }
+
     /// A convenience method to get the cached path to a resource using the given
     /// cache subdirectory (relative to the cache root).
     ///
